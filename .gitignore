@@ -1,4 +1,5 @@
 /chrome_bot_profile
 /__pycache__
 /logs
+config.json
 test.py
