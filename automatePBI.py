@@ -791,7 +791,7 @@ if __name__ == "__main__":
     # existentes dentro del directorio indicado
     for file in os.listdir(ROUTE):
         #if '.pbix' not in file or file in skip:
-        if '.pbix' not in file or file != 'PBI - TTA General.pbix':
+        if '.pbix' not in file:
             continue
 
         TOTALFILES += 1
