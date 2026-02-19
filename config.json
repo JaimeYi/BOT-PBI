@@ -1,0 +1,33 @@
+{
+    "DOWNLOAD_PATH": "",
+    "WORKSPACE": "",
+    "WEBHOOK_URL": "",
+    "ADDRESSE_MAIL": "",
+    "SP_URL": "",
+    "CREDENTIALS": {
+        "DEV": {
+        "EMAIL": "",
+        "PASSWORD": ""
+        },
+        "SALESFORCE": {
+            "USERNAME": "",
+            "PASSWORD" : ""
+        },
+        "SHAREPOINT": {
+            "EMAIL": "",
+            "PASSWORD": ""
+        },
+        "DATABASES": {
+            "192.168.0.1": {
+                "USERNAME": "",
+                "PASSWORD": ""
+            }
+        },
+        "WEBSITES": {
+            "https://tusitioweb.com/": {
+                "USERNAME": "",
+                "PASSWORD": ""
+            }
+        }
+    }
+}
