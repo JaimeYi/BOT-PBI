@@ -54,6 +54,42 @@ Antes de la primera ejecución, se debe completar el archivo `config.json`. **No
 | `WEBHOOK_URL` | URL de integración para enviar tarjetas a Microsoft Teams. |
 | `CREDENTIALS` | Bloques de usuario/contraseña para entornos DEV, Base de datos, SharePoint y Salesforce. |
 
+```json
+{
+    "DOWNLOAD_PATH": "",
+    "WORKSPACE": "",
+    "WEBHOOK_URL": "",
+    "ADDRESSE_MAIL": "",
+    "SP_URL": "",
+    "CREDENTIALS": {
+        "DEV": {
+        "EMAIL": "",
+        "PASSWORD": ""
+        },
+        "SALESFORCE": {
+            "USERNAME": "",
+            "PASSWORD" : ""
+        },
+        "SHAREPOINT": {
+            "EMAIL": "",
+            "PASSWORD": ""
+        },
+        "DATABASES": {
+            "192.168.0.1": {
+                "USERNAME": "",
+                "PASSWORD": ""
+            }
+        },
+        "WEBSITES": {
+            "https://tusitioweb.com/": {
+                "USERNAME": "",
+                "PASSWORD": ""
+            }
+        }
+    }
+}
+```
+
 ### ¿Cómo obtener la `WEBHOOK_URL` de Teams?
 
 Para que el bot envíe notificaciones a un canal de Teams, debes configurar un flujo de trabajo:
