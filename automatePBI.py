@@ -199,6 +199,27 @@ def teamsNotification(archivo, faseDeEjecucion, resultado, error):
     except Exception as e:
         print(f"{AMARILLO}Error de conexión: {e}{AMARILLO}")
 
+def cleanPath(ruta):
+    # Buscamos de derecha a izquierda (rfind) la última posición de ambos separadores
+    idx_slash = ruta.rfind('\\')
+    idx_puntos = ruta.rfind('...')
+    
+    # Evaluamos cuál de los dos separadores está más cerca del final
+    if idx_slash > idx_puntos:
+        # El corte se hace 1 posición después de la barra '\'
+        resultado = ruta[idx_slash + 1:]
+        
+    elif idx_puntos != -1:
+        # El corte se hace 3 posiciones después, para saltar los '...'
+        resultado = ruta[idx_puntos + 3:]
+        
+    else:
+        # Por seguridad, si no existe ninguno de los dos, devolvemos la ruta intacta
+        resultado = ruta
+        
+    # strip() limpia cualquier espacio "fantasma" que haya quedado al principio o al final
+    return resultado.strip()
+
 def loginOffice(main_window):
     # Seleccionamos la opcion 'Cuenta de Microsoft'
     btnMicrosoftAccount = main_window.child_window(title_re="^(Cuenta de Microsoft|Cuenta de organización)", control_type="Text", found_index=0)
@@ -234,20 +255,16 @@ def loginOffice(main_window):
 def loginBDD(main_window, database):
     global CONFIG
 
-    print("user")
     # Seleccionamos el campo 'usuario' e introducimos el nombre de usuario guardado
     usernameField = main_window.child_window(title="Nombre de usuario", control_type="Edit", found_index=0)
     usernameField.click_input()
-    print("user press")
     pyautogui.hotkey('ctrl','a')
     pyperclip.copy(CONFIG["CREDENTIALS"]["DATABASES"][database]["USERNAME"])
     pyautogui.hotkey('ctrl', 'v')
     
-    print("password")
     # Seleccionamos el campo 'contraseña' e introducimos la contraseña guardada
     passwordField = main_window.child_window(title="Contraseña", control_type="Edit", found_index=0)
     passwordField.click_input()
-    print("password press")
     pyautogui.hotkey('ctrl','a')
     pyperclip.copy(CONFIG["CREDENTIALS"]["DATABASES"][database]["PASSWORD"])
     pyautogui.hotkey('ctrl', 'v')
@@ -386,17 +403,25 @@ def update(main_window, name_file):
 
                                 # Obtenemos una copia de la lista de origenes de datos locales existentes para no tener errores por referencias obsoletas
                                 configSourceDataWindow = main_window.child_window(title_re=".*(Configuración de origen de datos).*", control_type="Window", found_index=0)
-                                dataSourcesList = configSourceDataWindow.descendants(control_type="ListItem")
+                                listSources = main_window.child_window(control_type="List", found_index=1)
+                                listSources.set_focus()
+                                listSources.type_keys("^{END}")
                                 extensions = ('xlsx', 'xlsm', 'xls', 'xlsb', 'xltx', 'xltm', 'csv')
-                                dataSourcesList = [t for item in dataSourcesList if any(ext in (t := item.window_text()) for ext in extensions)]
+                                dataSourcesList = [t for item in listSources if any(ext in (t := item.window_text()) for ext in extensions)]
 
                                 # Iteramos sobre los distintos archivos que pueden estar generando el problema
                                 modifiedPaths = 0
                                 for file in dataSourcesList:
                                     time.sleep(3)
                                     # Seleccionamos el elemento dentro de la lista
-                                    sourceDataItem = configSourceDataWindow.child_window(title=file, control_type="ListItem")
-                                    sourceDataItem.click_input()
+                                    searchBar = configSourceDataWindow.child_window(title='Buscar configuración de origen de datos', control_type="Edit", found_index=0)
+                                    pyperclip.copy(cleanPath(file))
+                                    searchBar.click_input()
+                                    pyautogui.hotkey('ctrl', 'a')
+                                    pyautogui.hotkey('ctrl', 'v')
+
+                                    selectedSource = listSources.child_window(title=file, control_type="ListItem", found_index=0)
+                                    selectedSource.click_input()
 
                                     # Entramos a la seccion 'Cambiar origen'
                                     changeSource = configSourceDataWindow.child_window(title="Cambiar origen...", control_type="Button", found_index=0)
@@ -766,7 +791,7 @@ if __name__ == "__main__":
     # existentes dentro del directorio indicado
     for file in os.listdir(ROUTE):
         #if '.pbix' not in file or file in skip:
-        if '.pbix' not in file or file != 'MODELO MTT REPUESTOS COMERCIAL.pbix':
+        if '.pbix' not in file or file != 'PBI - TTA General.pbix':
             continue
 
         TOTALFILES += 1
