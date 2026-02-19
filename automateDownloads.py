@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium import webdriver
+import subprocess
 import json
 import time
 import sys
@@ -62,30 +63,41 @@ driver = webdriver.Chrome(options=chrome_options)
 #=============================================#
 
 try:
-    # Apertura de la pagina
-    driver.get(CONFIG['SP_URL'])
+    # Definimos una lista con las URLs a procesar
+    urls_sharepoint = [CONFIG.get('SP_URL'), CONFIG.get('SP_URL_PARAMS')]
     wait = WebDriverWait(driver, 25)
-    print("-> Sesión de Google Chrome iniciada, ingresando en SharePoint")
-    
-    # Localizar y presionar el boton 'More' (...)
-    moreOptions_selector = 'button[data-automationid="more"]'
-    moreOptions = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, moreOptions_selector)))
-    driver.execute_script("arguments[0].click();", moreOptions)
 
-    # Localizar y presionar el boton de Descargar
-    download_selector = 'button[data-automationid="downloadCommand"]'
-    download = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, download_selector)))
-    download.click()
-    print("-> Proceso de descarga iniciado")
-    
-    # Damos un margen para que el navegador procese el inicio del archivo
-    time.sleep(5)
+    # Iteramos sobre cada URL
+    for url in urls_sharepoint:
+        # Validación de seguridad: si alguna URL está vacía en el config, la saltamos
+        if not url:
+            print("-> URL no definida en config.json, pasando a la siguiente")
+            continue
 
-    # Ejecutamos codigo para monitorizar y descomprimir descarga
-    os.system("py automateUnzip.py")
+        driver.get(url)
+        
+        # Localizar y presionar el boton 'More' (...)
+        moreOptions_selector = 'button[data-automationid="more"]'
+        moreOptions = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, moreOptions_selector)))
+        driver.execute_script("arguments[0].click();", moreOptions)
 
-    # Cerramos el navegador
-    driver.close()
+        # Localizar y presionar el boton de Descargar
+        download_selector = 'button[data-automationid="downloadCommand"]'
+        download = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, download_selector)))
+        download.click()
+        if url == CONFIG.get('SP_URL'):
+            print("-> Proceso de descarga de reportes y archivos de datos iniciado...")
+        else:
+            print("-> Proceso de descarga de parámetros iniciado...")
+        
+        # Damos un margen para que el navegador procese el inicio del archivo
+        time.sleep(5)
+
+        # Ejecutamos codigo para monitorizar y descomprimir ESTA descarga
+        subprocess.check_call(["py", "automateUnzip.py"])
+
+    print("-> Todas las descargas finalizadas. Cerrando navegador.")
+    driver.quit()
 
 
 except TimeoutException:

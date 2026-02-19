@@ -764,28 +764,8 @@ if __name__ == "__main__":
     # URL donde se envian las peticiones post con el mensaje a entregar por canal de Teams
     WEBHOOK = CONFIG["WEBHOOK_URL"]
 
-    skip = ["PBI - Análisis de mercado TTA.pbix", 
-            "Funnel Dongfeng MACO.pbix", 
-            "Funnel FAW MACO.pbix", 
-            "Funnel International MACO.pbix", 
-            "MACOTATTERSALL_NEO.pbix", 
-            "MODELO MTT REPUESTOS COMERCIAL.pbix", 
-            "MODELO MTT REPUESTOS MAIN.pbix",
-            "PBI - Control de Gestión MultiMaq.pbix",
-            "PBI - Soporte Tecnico TTM 2026.pbix",
-            "PBI - TTA General.pbix",
-            "PBI- Ppto 2026 Análisis Márgen Antofagasta.pbix",
-            "PBI- Ppto 2026 Análisis Márgen Curicó.pbix",
-            "PBI- Ppto 2026 Análisis Márgen General.pbix",
-            "PBI- Ppto 2026 Análisis Márgen HMK.pbix",
-            "PBI- Ppto 2026 Análisis Márgen Hyster.pbix",
-            "PBI- Ppto 2026 Análisis Márgen Liugong.pbix",
-            "PBI- Ppto 2026 Análisis Márgen Maximal.pbix",
-            "PBI- Ppto 2026 Análisis Márgen Puerto Montt - Osorno.pbix",
-            "PBI- Ppto 2026 Análisis Márgen Talcahuano.pbix",
-            "PBI- Control de Gestión Servicio TTM.pbix",
-            "Respaldo.pbix"
-            ]
+    skip = ["PBI_EEFF_GRUPO RUEDAS 2025.pbix",
+            "PBI_EEFF_GRUPO RUEDAS 2026.pbix"]
 
     # Se llama a la funcion principal de la automatizacion en este ciclo que itera sobre todos los archivos 
     # existentes dentro del directorio indicado
