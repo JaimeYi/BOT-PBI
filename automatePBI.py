@@ -366,7 +366,7 @@ def update(main_window, name_file):
                         if fileOrFolderFlag:
                             messages = [el for el in messages if "File or Folder" in el]
                             # Establecemos expresion regular para filtrar errores
-                            regPattern = r".*(Reporteria C&G Grupo Ruedas).*(03. REPORTES).*"
+                            regPattern = r".*(Reporteria C&G Grupo Ruedas).*"
                             regPattern = re.compile(regPattern, re.IGNORECASE)
 
                             invalidFiles = 0
@@ -469,7 +469,9 @@ def update(main_window, name_file):
                                     loadModal = main_window.child_window(title_re=".*(Carga).*", control_type="Pane")
                                     while True:
                                         if not loadModal.exists(timeout=20, retry_interval=2):
-                                            break
+                                            time.sleep(3)
+                                            if not loadModal.exists():
+                                                break
                             # Si existen archivos no validos arrojamos una excepcion, en caso contrario guardamos los cambios y retornamos False para repetir el proceso de actualizacion
                             if invalidFiles > 0:
                                 raise ValueError("no se han logrado encontrar los archivos especificados en los origenes de datos")
@@ -477,7 +479,7 @@ def update(main_window, name_file):
                                 btnSave = main_window.child_window(title="Guardar", control_type="Button", found_index=0)
                                 btnSave.click_input()
                                 time.sleep(20)
-                                return False
+                                return False, False
                         
                         elif sqlHostFlag:
                             # Cerramos el modal de actualizacion
@@ -755,16 +757,13 @@ def automateWorkflow(file):
                 print(f"-> {ROJO}Proceso de publicación fallido{RESET}")
                 teamsNotification(name_file, 2, 2, causa)
         
-        # ANOTACIÓN EN TXT
-        if 'found_index is specified as' in causa:
-            causa = "Elemento no encontrado"
         log(name_file, fase, causa)
         print(f"-> {ROJO}Revisar logs de ejecución para más información{RESET}")
 
     except Exception as e:
         FALLIDOS.append(name_file)
         teamsNotification(name_file, "General", 2, str(e))
-        log(name_file, "-> Error Inesperado", str(e))
+        log(name_file, "Error Inesperado", str(e))
         print(f"-> {ROJO}Error crítico registrado, revisar logs de ejecución para más información{RESET}")
     
     force_kill_powerbi()
@@ -781,14 +780,13 @@ if __name__ == "__main__":
     # URL donde se envian las peticiones post con el mensaje a entregar por canal de Teams
     WEBHOOK = CONFIG["WEBHOOK_URL"]
 
-    skip = ["PBI_EEFF_GRUPO RUEDAS 2025.pbix",
-            "PBI_EEFF_GRUPO RUEDAS 2026.pbix"]
+    skip = ["Reporte Ventas.pbix"]
 
     # Se llama a la funcion principal de la automatizacion en este ciclo que itera sobre todos los archivos 
     # existentes dentro del directorio indicado
     for file in os.listdir(ROUTE):
-        #if '.pbix' not in file or file in skip:
-        if '.pbix' not in file:
+        if '.pbix' not in file or file != "Reporte Ventas .pbix":
+        #if '.pbix' not in file:
             continue
 
         TOTALFILES += 1
