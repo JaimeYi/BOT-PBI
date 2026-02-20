@@ -13,16 +13,16 @@ def printTitle():
     print(fr"{AMARILLO}  /_\| | | |_   _/ _ \|  \/  | /_\_   _|_ _|_  / /_\ / __|_ _/ _ \| \| |{RESET}")
     print(fr"{AMARILLO} / _ \ |_| | | || (_) | |\/| |/ _ \| |  | | / / / _ \ (__ | | (_) | .` |{RESET}")
     print(fr"{AMARILLO}/_/ \_\___/  |_| \___/|_|  |_/_/ \_\_| |___/___/_/ \_\___|___\___/|_|\_|{RESET}")
-    print(fr"{AMARILLO} ___ ___ ___{RESET} ")
-    print(fr"{AMARILLO}| _ \ _ )_ _{RESET}|")
-    print(fr"{AMARILLO}|  _/ _ \| |{RESET} ")
-    print(fr"{AMARILLO}|_| |___/___{RESET}|")
+    print(fr"{AMARILLO} ___ ___ ___ {RESET}")
+    print(fr"{AMARILLO}| _ \ _ )_ _|{RESET}")
+    print(fr"{AMARILLO}|  _/ _ \| | {RESET}")
+    print(fr"{AMARILLO}|_| |___/___|{RESET}")
     print("\n"*2)
 
 # Definición de colores
 VERDE = '\033[92m'
 ROJO = '\033[91m'
-AMARILLO = '\033[93m'
+AMARILLO = '\033[33m'
 RESET = '\033[0m'
 
 printTitle()

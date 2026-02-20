@@ -27,7 +27,7 @@ CONFIG = loadConfig()
 
 # Definición de colores
 ROJO = '\033[91m'
-AMARILLO = '\033[93m'
+AMARILLO = '\033[33m'
 RESET = '\033[0m'
 
 def login_microsoft(driver, wait, email, password):

@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import pyautogui
 import pyperclip
+import pywinauto
 import requests
 import smtplib
 import psutil
@@ -32,7 +33,7 @@ WARNING = []
 # Definición de colores
 VERDE = '\033[92m'
 ROJO = '\033[91m'
-AMARILLO = '\033[93m'
+AMARILLO = '\033[33m'
 RESET = '\033[0m'
 
 
@@ -305,7 +306,7 @@ def update(main_window, name_file):
                 # Doble verificacion para asegurar que realmente el proceso termino
                 if not dialogo_progreso.exists():
                     teamsNotification(name_file, 1, 0, '')
-                    return True
+                    return True, False
             else:
                 try:
                     time.sleep(2)
@@ -523,15 +524,17 @@ def update(main_window, name_file):
                                 btnSave = main_window.child_window(title="Guardar", control_type="Button", found_index=0)
                                 btnSave.click_input()
                                 time.sleep(20)
-                                return False
+                                return False, False
                             else:
                                 raise ValueError("no se han logrado encontrar las credenciales para la base de datos problematica")
 
                         # Solo si existe, traemos el texto para el log
                         error_el = dialogo_progreso.child_window(title_re=".*(error|errores|credenciales|Folder).*", control_type="Text", found_index=0)
                         raise ValueError(f"{error_el.window_text()}|actualizacion")
-
+                except pywinauto.findwindows.ElementNotFoundError:
+                    return False, True
                 except Exception as e:
+                    print(e)
                     # 1. Si el error es uno de los nuestros (ya trae el marcador), lo lanzamos fuera de inmediato
                     # Esto evitará que caiga en el try/except anidado de abajo.
                     if "|actualizacion" in str(e):
@@ -540,7 +543,7 @@ def update(main_window, name_file):
                     try:
                         if not dialogo_progreso.exists(timeout=0) and not fileOrFolderFlag:
                             teamsNotification(name_file, 1, 0, '')
-                            return True
+                            return True, False
                         elif fileOrFolderFlag:
                             teamsNotification(name_file, 1, 2, e)
                             raise ValueError(f"Error de origen de datos: {e}|actualizacion")
@@ -548,9 +551,9 @@ def update(main_window, name_file):
                         if "|actualizacion" in str(nested_e):
                             raise nested_e
                         
-                        return True
+                        return True, False
     else:
-        return False
+        return False, True
 
 def automateWorkflow(file):
     global SUCCESSFILES, EXITOSOS, FALLIDOS, WARNINGFILES, ROJO, RESET, AMARILLO, VERDE
@@ -586,33 +589,49 @@ def automateWorkflow(file):
 
         # Cantidad de intentos que lleva la actualizacion
         updateTrys = 0
+        elementNotFoundTrys = 0
         
         # Cantidad de intentos permitidos que se le daran a la actualizacion
-        attempts = 3
+        attempts = 2
+        elementAttempts = 2
 
-        while updateTrys < attempts:
-            update_result = update(main_window, name_file)
+        while updateTrys < attempts and elementNotFoundTrys < elementAttempts:
+            update_result, elementNotFound = update(main_window, name_file)
             
+            # Si la actualizacion termina exitosamente se termina el ciclo
             if update_result is True:
                 break
             else:
-                if updateTrys >= 0:
+                # Comprobamos si el error se debe a que no se encontro un elemento o por otra razon
+                if elementNotFound:
+                    print(f"-> {AMARILLO}Un elemento no se encontró en la interfaz gráfica, reintentando...{RESET}")
+                    elementNotFoundTrys += 1
+                else:
                     print(f"-> {AMARILLO}Hubo un problema al iniciar la actualización, reintentando...{RESET}")
                     updateTrys += 1
-                    if not force_kill_powerbi():
-                        raise ValueError("No se logró eliminar el proceso anterior de PBI Desktop|actualizacion")
-                    time.sleep(5)
-                    if updateTrys == attempts:
-                        raise ValueError("No se logró presionar botón de actualización o panel de actualización no se desplegó|actualizacion")
-                    os.startfile(file)
 
-                    app = Application(backend="uia").connect(path="PBIDesktop.exe", timeout=60)
-                    teamsNotification(name_file, 0, 0, '')
+                # Cerramos el proceso de PBI activo
+                if not force_kill_powerbi():
+                    raise ValueError("No se logró eliminar el proceso anterior de PBI Desktop|actualizacion")
+                
+                time.sleep(5)
+
+                # Si ya se alcanzo el maximo de intentos arrojamos una excepcion
+                if updateTrys == attempts:
+                    raise ValueError("Ocurrió un error en el proceso de actualización que requerira intervención|actualizacion")
+                elif elementNotFoundTrys == elementAttempts:
+                    raise ValueError("Elemento de la interfaz gráfica no se logró encontrar|actualizacion")
+
+                os.startfile(file)
+
+                app = Application(backend="uia").connect(path="PBIDesktop.exe", timeout=60)
+                teamsNotification(name_file, 0, 0, '')
+                
+                main_window = app.window(title_re=f".*{name_file}.*")
+                
+                main_window.wait('ready', timeout=300)
+                main_window.set_focus()
                     
-                    main_window = app.window(title_re=f".*{name_file}.*")
-                    
-                    main_window.wait('ready', timeout=300)
-                    main_window.set_focus()
             
 
         #=============================================#
@@ -706,7 +725,7 @@ def automateWorkflow(file):
                 teamsNotification(name_file, 2, 3, 'Problema con los origenes de datos al publicar')
                 WARNINGFILES += 1
                 WARNING.append(name_file)
-                print("-> Proceso de publicación finalizado con advertencias")
+                print(f"-> {AMARILLO}Proceso de publicación finalizado con advertencias{RESET}")
                 break
             # Si se encuentra un texto de exito notificamos por teams, modificamos las respectivas variables y terminamos el ciclo
             if foundReady:
