@@ -7,6 +7,7 @@ import pyautogui
 import pyperclip
 import requests
 import smtplib
+import psutil
 import time
 import json
 import os
@@ -34,9 +35,6 @@ ROJO = '\033[91m'
 AMARILLO = '\033[93m'
 RESET = '\033[0m'
 
-import psutil
-import subprocess
-import time
 
 def force_kill_powerbi():
     # 1. Intento agresivo con taskkill (incluye hijos /T y forzado /F)

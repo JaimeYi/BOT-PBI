@@ -27,14 +27,69 @@ CONFIG = loadConfig()
 
 # Definición de colores
 ROJO = '\033[91m'
+AMARILLO = '\033[93m'
 RESET = '\033[0m'
+
+def login_microsoft(driver, wait, email, password):
+    print("-> Verificando estado de sesión en Microsoft...")
+    try:
+        campos_visibles = WebDriverWait(driver, 10).until(
+            EC.visibility_of_any_elements_located((By.XPATH, "//input[@name='loginfmt' or @name='passwd']"))
+        )
+        
+        # Tomamos el primer elemento visible de la lista
+        campo_activo = campos_visibles[0]
+        nombre_campo = campo_activo.get_attribute("name")
+        
+        # 2. Lógica dinámica basada en la UI visible
+        if nombre_campo == "loginfmt":
+            print("-> Se requiere correo. Ingresando correo...")
+            campo_activo.clear()
+            campo_activo.send_keys(email)
+            
+            btn_next = wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9")))
+            btn_next.click()
+            
+            # Tras avanzar, esperamos a que la contraseña se vuelva visible
+            campo_activo = wait.until(EC.visibility_of_element_located((By.NAME, "passwd")))
+            time.sleep(1) # Pausa por animación CSS
+            
+        elif nombre_campo == "passwd":
+            print("-> Ingresando contraseña...")
+            time.sleep(1)
+            
+        # 3. Flujo unificado para contraseña
+        campo_activo.send_keys(password)
+        
+        btn_sign_in = wait.until(EC.element_to_be_clickable((By.ID, "idSIButton9")))
+        btn_sign_in.click()
+
+        # 4. Captura de errores de contraseña
+        try:
+            error_element = WebDriverWait(driver, 3).until(
+                EC.visibility_of_element_located((By.ID, "passwordError"))
+            )
+            print(f"-> {ROJO}ERROR DE CREDENCIALES: {error_element.text}{RESET}")
+            print(f"{ROJO}Actualiza la contraseña de SharePoint en config.json.{RESET}")
+            driver.quit()
+            sys.exit(1)
+        except TimeoutException:
+            pass # Sin error visible, continuamos
+
+        # 5. Pantalla final de sesión
+        btn_no = wait.until(EC.element_to_be_clickable((By.ID, "idBtn_Back")))
+        btn_no.click()
+        
+        print("-> Inicio de sesión exitoso")
+        
+    except TimeoutException:
+        pass
 
 #=============================================#
 #          CONFIGURACION DEL DRIVER           #
 #=============================================#
 
 # Seleccionamos sesion creada para el bot (en caso de no existir se crea una sesion nueva)
-bot_user_data = os.path.join(os.getcwd(), 'chrome_bot_profile')
 download_dir = CONFIG["DOWNLOAD_PATH"]
 
 chrome_options = Options()
@@ -51,8 +106,6 @@ chrome_options.add_experimental_option("prefs", prefs)
 chrome_options.add_experimental_option("detach", True)
 chrome_options.add_argument("--log-level=3")
 chrome_options.add_argument("--start-maximized")
-chrome_options.add_argument("--profile-directory=Default")
-chrome_options.add_argument(f"--user-data-dir={bot_user_data}")
 
 # Inicializacion del driver
 driver = webdriver.Chrome(options=chrome_options)
@@ -67,6 +120,9 @@ try:
     urls_sharepoint = [CONFIG.get('SP_URL'), CONFIG.get('SP_URL_PARAMS')]
     wait = WebDriverWait(driver, 25)
 
+    sp_email = CONFIG["CREDENTIALS"]["SHAREPOINT"]["EMAIL"]
+    sp_password = CONFIG["CREDENTIALS"]["SHAREPOINT"]["PASSWORD"]
+
     # Iteramos sobre cada URL
     for url in urls_sharepoint:
         # Validación de seguridad: si alguna URL está vacía en el config, la saltamos
@@ -75,6 +131,10 @@ try:
             continue
 
         driver.get(url)
+        time.sleep(5)
+        login_microsoft(driver, wait, sp_email, sp_password)
+
+        time.sleep(3)
         
         # Localizar y presionar el boton 'More' (...)
         moreOptions_selector = 'button[data-automationid="more"]'

@@ -1,9 +1,8 @@
 import subprocess
 import time
 import sys
-import os
 
-os.system("cls")
+subprocess.run("cls", shell=True)
 
 def printTitle():
     print(fr"{AMARILLO} ___  ___ _____ {RESET}")
@@ -35,13 +34,13 @@ except subprocess.CalledProcessError:
 
 count = 5
 for _ in range(5):
-    os.system("cls")
+    subprocess.run("cls", shell=True)
     printTitle()
     print(f"\nProceso de descarga y descompresión finalizado, pasando a la siguiente fase en {count}")
     count -= 1
     time.sleep(1)
 
-os.system("cls")
+subprocess.run("cls", shell=True)
 printTitle()
 print(f"* {VERDE}Descarga y descompresión...LISTO{RESET}")
 print("* Actualización y publicación de reportes...EJECUTANDO\n")
@@ -52,13 +51,13 @@ except subprocess.CalledProcessError:
 
 count = 5
 for _ in range(5):
-    os.system("cls")
+    subprocess.run("cls", shell=True)
     printTitle()
     print(f"\nProceso de actualización y descompresión finalizado, pasando a la siguiente fase en {count}")
     count -= 1
     time.sleep(1)
 
-os.system("cls")
+subprocess.run("cls", shell=True)
 printTitle()
 print(f"* {VERDE}Descarga y descompresión...LISTO{RESET}")
 print(f"* {VERDE}Actualización y publicación de reportes...LISTO{RESET}")
