@@ -1,38 +1,34 @@
-## Resumen del Funcionamiento
+## 1. Resumen del Funcionamiento
 
-Este proyecto es un flujo de automatización diseñado para descargar, actualizar y publicar reportes de Power BI (`.pbix`) de forma desatendida. El bot simula interacciones humanas para extraer las últimas fuentes de datos desde SharePoint, procesar los reportes localmente manejando credenciales y modales de error, y finalmente publicarlos en un Workspace de Power BI en la nube, notificando el resultado a través de Microsoft Teams y correo electrónico.
-
----
-
-## Arquitectura y Módulos
-
-El sistema está dividido en cuatro componentes principales orquestados secuencialmente:
-
-1. **`orchestrator.py` (Script Principal):** Es el punto de entrada. Maneja la interfaz de consola, ejecuta los subprocesos en orden y controla las detenciones en caso de errores críticos.
-2. **`automateDownloads.py`:** Utiliza **Selenium** para abrir una sesión controlada de Google Chrome, navegar a SharePoint y descargar el archivo `.zip` con los reportes y fuentes de datos.
-3. **`automateUnzip.py`:** Monitoriza la carpeta de descargas. Una vez detectado el archivo final, lo descomprime, extrae exclusivamente archivos relevantes (Excel, CSV, PBIX) a la ruta raíz y elimina el archivo comprimido original.
-4. **`automatePBI.py`:** El núcleo del procesamiento. Utiliza **Pywinauto** para tomar control del sistema operativo, abrir Power BI Desktop, refrescar los orígenes de datos, inyectar credenciales (SQL, Web, SharePoint) si son requeridas, corregir rutas locales rotas y publicar el resultado.
-5. **`config.json`:** Archivo centralizado de credenciales y rutas.
+Este proyecto consiste en un flujo de automatización robótica de procesos (RPA) diseñado para la descarga, actualización y publicación desatendida de reportes de Power BI (`.pbix`). El sistema simula interacciones de usuario para extraer fuentes de datos actualizadas desde SharePoint, procesar los reportes localmente gestionando credenciales de origen y modales de error, y finalmente publicar los resultados en un Workspace de Power BI Service. El ciclo concluye con notificaciones de estado enviadas a través de Microsoft Teams y correo electrónico.
 
 ---
 
-## Requisitos y Especificaciones
+## 2. Arquitectura y Módulos
 
-Para poder ejecutar este bot en un servidor o máquina local, se debe cumplir con el siguiente entorno:
+El sistema opera bajo una arquitectura modular orientada a la línea de comandos (CLI), dividida en los siguientes componentes principales:
 
-### Requisitos de Sistema
+1. **`main.py` (Orquestador Principal):** Punto de entrada del sistema. Parsea los parámetros de ejecución, valida las solicitudes, orquesta la llamada a los subprocesos en el orden correcto y controla el manejo de excepciones de alto nivel.
+2. **`configManager.py` (Gestor de Configuración):** Interfaz CLI dedicada a la administración segura del archivo `config.json`. Previene errores de sintaxis y permite la configuración de rutas, credenciales y reportes directamente desde la consola.
+3. **`automateDownloads.py`:** Módulo basado en Selenium WebDriver. Automatiza el inicio de sesión en el entorno de Microsoft 365, navega hacia las rutas de SharePoint especificadas y ejecuta la descarga de paquetes de datos y parámetros.
+4. **`automateUnzip.py`:** Monitor de sistema de archivos. Detecta la finalización de las descargas y procede a la extracción y reubicación exclusiva de formatos autorizados (Excel, CSV, PBIX) hacia el directorio de trabajo operativo.
+5. **`automatePBI.py`:** Módulo núcleo de procesamiento RPA. Utiliza la librería Pywinauto para tomar control de la interfaz de Power BI Desktop, aplicar actualizaciones de datos, inyectar credenciales (Bases de Datos, Web, SharePoint), enrutar conexiones locales y ejecutar la publicación del reporte.
 
-* **Sistema Operativo:** Windows 10/11 o Windows Server (Requerido por Pywinauto y Power BI Desktop).
+---
+
+## 3. Requisitos del Sistema e Instalación
+
+Para asegurar la correcta ejecución del bot, el entorno anfitrión debe cumplir con las siguientes especificaciones:
+
+### Requisitos de Entorno
+* **Sistema Operativo:** Windows 10, Windows 11 o Windows Server (Requisito estricto de compatibilidad para Pywinauto y Power BI Desktop).
 * **Software Base:**
-* Python 3.9 o superior.
-* Google Chrome (Última versión).
-* Microsoft Power BI Desktop (Instalación clásica `.exe`, no la versión de Microsoft Store para evitar problemas de rutas).
+  * Python 3.9 o superior.
+  * Google Chrome (Última versión estable).
+  * Microsoft Power BI Desktop (Se requiere la instalación mediante ejecutable clásico `.exe`. **No** utilizar la versión distribuida mediante Microsoft Store para evitar conflictos con rutas virtualizadas).
 
-
-
-### Dependencias de Python
-
-Se deben instalar las siguientes librerías externas ejecutando:
+### Instalación de Dependencias
+Ejecute el siguiente comando en su terminal para instalar las librerías requeridas por el entorno de Python:
 
 ```bash
 pip install selenium pywinauto pyautogui pyperclip requests psutil
@@ -41,80 +37,113 @@ pip install selenium pywinauto pyautogui pyperclip requests psutil
 
 ---
 
-## Configuración (`config.json`)
+## 4. Configuración Inicial (configManager.py)
 
-Antes de la primera ejecución, se debe completar el archivo `config.json`. **Nota:** Este archivo contiene credenciales sensibles y NO debe ser subido a repositorios públicos.
+Toda la parametrización del entorno (rutas, accesos, credenciales) se almacena en el archivo `config.json`. Por motivos de seguridad y estandarización, la manipulación de este archivo debe realizarse **exclusivamente** mediante el gestor `configManager.py`.
 
-| Parámetro | Descripción |
-| --- | --- |
-| `DOWNLOAD_PATH` | Ruta absoluta de Windows donde se descargarán y procesarán los archivos (ej. `C:\\Users\\bot\\Downloads`). |
-| `WORKSPACE` | Nombre exacto del espacio de trabajo en Power BI Service donde se publicará. |
-| `ADDRESSE_MAIL` | Correo electrónico que recibirá el reporte con el resumen de ejecución. |
-| `SP_URL` | URL directa de SharePoint donde se aloja la carpeta desde la cual se busca descargar los reportes. |
-| `WEBHOOK_URL` | URL de integración para enviar tarjetas a Microsoft Teams. |
-| `CREDENTIALS` | Bloques de usuario/contraseña para entornos DEV, Base de datos, SharePoint y Salesforce. |
+Para visualizar el listado completo de comandos disponibles:
 
-```json
-{
-    "DOWNLOAD_PATH": "",
-    "WORKSPACE": "",
-    "WEBHOOK_URL": "",
-    "ADDRESSE_MAIL": "",
-    "SP_URL": "",
-    "CREDENTIALS": {
-        "DEV": {
-        "EMAIL": "",
-        "PASSWORD": ""
-        },
-        "SALESFORCE": {
-            "USERNAME": "",
-            "PASSWORD" : ""
-        },
-        "SHAREPOINT": {
-            "EMAIL": "",
-            "PASSWORD": ""
-        },
-        "DATABASES": {
-            "192.168.0.1": {
-                "USERNAME": "",
-                "PASSWORD": ""
-            }
-        },
-        "WEBSITES": {
-            "https://tusitioweb.com/": {
-                "USERNAME": "",
-                "PASSWORD": ""
-            }
-        }
-    },
-    "ONLY_PUBLISH": [
-        "nombreReporte.pbix"
-    ]
-}
+```cmd
+python configManager.py --help
+
 ```
 
-### ¿Cómo obtener la `WEBHOOK_URL` de Teams?
+### Comandos de Configuración Frecuentes:
 
-Para que el bot envíe notificaciones a un canal de Teams, debes configurar un flujo de trabajo:
+**1. Definición de variables globales:**
 
-1. Abre Microsoft Teams y ve al canal donde deseas recibir las alertas.
-2. Haz clic en los tres puntos `(...)` en la esquina superior derecha del canal y selecciona **Flujos de trabajo** (Workflows).
-3. Busca la plantilla **"Publicar en un canal cuando se reciba una solicitud de webhook"** (Post to a channel when a webhook request is received).
-4. Sigue los pasos para darle un nombre a la conexión (ej. "Bot PBI") y selecciona el equipo y canal.
-5. Al finalizar, el sistema generará una **URL larga**. Cópiala y pégala exactamente igual en el campo `"WEBHOOK_URL"` de tu `config.json`.
-6. En caso de tener inconvenientes al realizar este proceso desde Microsoft Teams, también puede realizarse en el sitio web de Power Automate.
+```cmd
+python configManager.py set DOWNLOAD_PATH "C:\Ruta\Hacia\Directorio\Descargas"
+python configManager.py set WORKSPACE "Nombre_Workspace_Destino"
+
+```
+
+**2. Actualización de credenciales de sistema:**
+
+```cmd
+python configManager.py set-cred DEV usuario@empresa.com "ContraseñaSegura"
+python configManager.py set-cred SHAREPOINT usuario@empresa.com "ContraseñaSegura"
+
+```
+
+**3. Administración de orígenes de datos (Bases de datos y Web):**
+
+```cmd
+python configManager.py add-db 192.168.0.1 admin_sql "ClaveSQL"
+python configManager.py add-web [https://intranet.empresa.com](https://intranet.empresa.com) admin "ClaveWeb"
+
+```
+
+**4. Auditoría de configuración actual:**
+
+```cmd
+python configManager.py list
+
+```
+
+*(Nota: Para habilitar las alertas vía Microsoft Teams, es necesario generar una URL mediante un flujo de "Webhook entrante" en el canal deseado y registrarla en el sistema utilizando el comando: `python configManager.py set WEBHOOK_URL "URL_GENERADA"`).*
 
 ---
 
-## 🚀 Modo de Uso
+## 5. Ejecución y Modo de Uso (main.py)
 
-1. **Preparación:** Asegúrate de que ninguna instancia de Power BI Desktop esté abierta y que tu ratón y teclado no vayan a ser utilizados, ya que el bot tomará el control del cursor.
-2. **Ejecución:** Abre una terminal (CMD o PowerShell) en el directorio del proyecto y ejecuta el orquestador:
+La herramienta `main.py` acepta múltiples parámetros de ejecución. Previo a iniciar cualquier flujo, debe garantizar que **no existan instancias previas de Power BI Desktop en ejecución** y que el equipo no reciba interacción de hardware (mouse/teclado) durante el proceso automatizado.
+
+Para consultar el manual de operación en consola:
+
 ```cmd
-python orchestrator.py
+python main.py --help
+
 ```
-3. **Opcional:** En caso de querer ejecutar uno de los flujos de trabajo de manera independiente basta con ejecutar el respectivo código.
 
+### Escenarios de Ejecución Permitidos:
 
-3. **Monitoreo:** El script mostrará una interfaz en consola indicando la fase actual. Puedes minimizar la consola, pero **no minimices ni interactúes con las ventanas de Chrome o Power BI** que el bot abra.
-4. **Resultados:** Al finalizar, revisa tu canal de Teams o tu bandeja de entrada para ver el resumen de ejecución. Si hubo fallos, revisa la carpeta `/logs` generada automáticamente por el sistema.
+**Ejecución de flujo completo (Estándar):**
+Ejecuta secuencialmente descarga, descompresión, actualización de datos y publicación para todos los reportes habilitados.
+
+```cmd
+python main.py
+
+```
+
+**Omitir fase de descarga:**
+Ideal para reprocesamientos cuando los archivos fuente ya se encuentran actualizados en el directorio local.
+
+```cmd
+python main.py nodownload
+
+```
+
+**Solo Publicación:**
+Omite el refresco de orígenes de datos. Destinado a actualizaciones rápidas de formatos visuales o medidas DAX.
+
+```cmd
+python main.py onlypublish
+
+```
+
+**Ejecución sobre un archivo específico:**
+Aísla la ejecución a un único reporte, ignorando el resto de archivos contenidos en el directorio. El archivo debe existir físicamente en la ruta definida en `DOWNLOAD_PATH`.
+
+```cmd
+python main.py Nombre_Del_Reporte.pbix
+
+```
+
+**Ejecución combinada (Ejemplo avanzado):**
+Publica un archivo específico omitiendo la fase de descarga en SharePoint y la actualización de orígenes de datos.
+
+```cmd
+python main.py nodownload onlypublish Nombre_Del_Reporte.pbix
+
+```
+
+---
+
+## 6. Resultados y Registro de Eventos (Logs)
+
+Al finalizar la ejecución del proceso, el orquestador generará las siguientes salidas operativas:
+
+1. **Notificación Push (Teams):** Envío de una Tarjeta Adaptable (Adaptive Card) al canal configurado detallando la cantidad de archivos procesados, éxitos y fallos.
+2. **Reporte por Correo Electrónico:** Emisión de un resumen en formato HTML estructurado a la dirección registrada en el parámetro `ADDRESSE_MAIL`.
+3. **Registro de Errores Técnicos:** En caso de interrupciones o fallos de lectura de orígenes de datos, el sistema registrará la traza del error en la carpeta local `/logs`, almacenando el detalle con estampa de tiempo (timestamp) para su posterior auditoría.
