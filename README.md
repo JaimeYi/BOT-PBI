@@ -1,6 +1,6 @@
 ## 1. Resumen del Funcionamiento
 
-Este proyecto consiste en un flujo de automatización robótica de procesos (RPA) diseñado para la descarga, actualización y publicación desatendida de reportes de Power BI (`.pbix`). El sistema simula interacciones de usuario para extraer fuentes de datos actualizadas desde SharePoint, procesar los reportes localmente gestionando credenciales de origen y modales de error, y finalmente publicar los resultados en un Workspace de Power BI Service. El ciclo concluye con notificaciones de estado enviadas a través de Microsoft Teams y correo electrónico.
+Este proyecto consiste en un flujo de automatización robótica de procesos diseñado para la descarga, actualización y publicación desatendida de reportes de Power BI (`.pbix`). El sistema simula interacciones de usuario para extraer fuentes de datos actualizadas desde SharePoint, procesar los reportes localmente gestionando credenciales de origen y modales de error, y finalmente publicar los resultados en un Workspace de Power BI Service. El ciclo concluye con notificaciones de estado enviadas a través de Microsoft Teams y correo electrónico.
 
 ---
 
@@ -12,7 +12,7 @@ El sistema opera bajo una arquitectura modular orientada a la línea de comandos
 2. **`configManager.py` (Gestor de Configuración):** Interfaz CLI dedicada a la administración segura del archivo `config.json`. Previene errores de sintaxis y permite la configuración de rutas, credenciales y reportes directamente desde la consola.
 3. **`automateDownloads.py`:** Módulo basado en Selenium WebDriver. Automatiza el inicio de sesión en el entorno de Microsoft 365, navega hacia las rutas de SharePoint especificadas y ejecuta la descarga de paquetes de datos y parámetros.
 4. **`automateUnzip.py`:** Monitor de sistema de archivos. Detecta la finalización de las descargas y procede a la extracción y reubicación exclusiva de formatos autorizados (Excel, CSV, PBIX) hacia el directorio de trabajo operativo.
-5. **`automatePBI.py`:** Módulo núcleo de procesamiento RPA. Utiliza la librería Pywinauto para tomar control de la interfaz de Power BI Desktop, aplicar actualizaciones de datos, inyectar credenciales (Bases de Datos, Web, SharePoint), enrutar conexiones locales y ejecutar la publicación del reporte.
+5. **`automatePBI.py`:** Módulo núcleo de procesamiento. Utiliza la librería Pywinauto para tomar control de la interfaz de Power BI Desktop, aplicar actualizaciones de datos, inyectar credenciales (Bases de Datos, Web, SharePoint), enrutar conexiones locales y ejecutar la publicación del reporte.
 
 ---
 
@@ -25,7 +25,7 @@ Para asegurar la correcta ejecución del bot, el entorno anfitrión debe cumplir
 * **Software Base:**
   * Python 3.9 o superior.
   * Google Chrome (Última versión estable).
-  * Microsoft Power BI Desktop (Se requiere la instalación mediante ejecutable clásico `.exe`. **No** utilizar la versión distribuida mediante Microsoft Store para evitar conflictos con rutas virtualizadas).
+  * Microsoft Power BI Desktop.
 
 ### Instalación de Dependencias
 Ejecute el siguiente comando en su terminal para instalar las librerías requeridas por el entorno de Python:
@@ -74,7 +74,15 @@ python configManager.py add-web [https://intranet.empresa.com](https://intranet.
 
 ```
 
-**4. Auditoría de configuración actual:**
+**4. Administración de reportes (modo 'solo publicación'):**
+
+```cmd
+python configManager.py add-report "Reporte.pbix"
+python configManager.py del-report "Reporte.pbix"
+
+```
+
+**5. Auditoría de configuración actual:**
 
 ```cmd
 python configManager.py list
@@ -115,7 +123,7 @@ python main.py nodownload
 ```
 
 **Solo Publicación:**
-Omite el refresco de orígenes de datos. Destinado a actualizaciones rápidas de formatos visuales o medidas DAX.
+Omite el refresco de orígenes de datos. Destinado a actualizaciones rápidas de formatos visuales o medidas DAX. Es importante tener en consideración que los únicos archivos que serán tomados en cuenta para esta fase serán aquellos que se encuentren en `config.json`, en la sección `ONLY_PUBLISH` (para modificar estos registros utilizar comandos indicados en la sección 4) 
 
 ```cmd
 python main.py onlypublish

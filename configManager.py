@@ -16,10 +16,13 @@ class ConfigManager:
         self.config = self._load_config()
 
     def _load_config(self):
+        # Si el archivo no existe, lo creamos físicamente de inmediato
         if not os.path.exists(self.filepath):
-            return {
+            print(f"\n{AMARILLO}[INFO]{RESET} Archivo '{self.filepath}' no encontrado. Generando plantilla base...")
+            
+            plantilla = {
                 "DOWNLOAD_PATH": "", "WORKSPACE": "", "WEBHOOK_URL": "",
-                "ADDRESSE_MAIL": "", "SP_URL": "",
+                "ADDRESSE_MAIL": "", "SP_URL": "", "SP_URL_PARAMS": "",
                 "CREDENTIALS": {
                     "DEV": {"EMAIL": "", "PASSWORD": ""},
                     "SALESFORCE": {"USERNAME": "", "PASSWORD": ""},
@@ -29,6 +32,15 @@ class ConfigManager:
                 },
                 "ONLY_PUBLISH": []
             }
+            
+            # Forzamos la escritura en el disco duro
+            with open(self.filepath, 'w', encoding='utf-8') as f:
+                json.dump(plantilla, f, indent=4, ensure_ascii=False)
+                
+            print(f"{VERDE}[SUCCESS]{RESET} Plantilla generada exitosamente en el directorio.\n")
+            return plantilla
+            
+        # Si existe, lo leemos de manera estándar
         with open(self.filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
 
@@ -129,7 +141,7 @@ def main():
 
     # Comando: set (Para configuraciones base)
     parser_set = subparsers.add_parser("set", help="Define una variable global (ej. WORKSPACE, DOWNLOAD_PATH)")
-    parser_set.add_argument("key", choices=["DOWNLOAD_PATH", "WORKSPACE", "WEBHOOK_URL", "ADDRESSE_MAIL", "SP_URL"], help="Variable a modificar")
+    parser_set.add_argument("key", choices=["DOWNLOAD_PATH", "WORKSPACE", "WEBHOOK_URL", "ADDRESSE_MAIL", "SP_URL", "SP_URL_PARAMS"], help="Variable a modificar")
     parser_set.add_argument("value", help="Nuevo valor")
 
     # Comando: set-cred (Para credenciales fijas)
@@ -175,7 +187,7 @@ def main():
     if args.comando == "list":
         print(f"\n{CELESTE}=== ESTADO ACTUAL DE CONFIG.JSON ==={RESET}")
         print(f"{VERDE}\n[VARIABLES GLOBALES]{RESET}")
-        for key in ["DOWNLOAD_PATH", "WORKSPACE", "WEBHOOK_URL", "ADDRESSE_MAIL", "SP_URL"]:
+        for key in ["DOWNLOAD_PATH", "WORKSPACE", "WEBHOOK_URL", "ADDRESSE_MAIL", "SP_URL", "SP_URL_PARAMS"]:
             valor = config.config.get(key, '')
             print(f"  {key:<15} : {valor if valor else 'No definido'}")
             
