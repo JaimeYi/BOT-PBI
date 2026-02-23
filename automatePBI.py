@@ -11,6 +11,7 @@ import smtplib
 import psutil
 import time
 import json
+import sys
 import os
 import re
 
@@ -557,99 +558,23 @@ def update(main_window, name_file):
     else:
         return False, True
 
-def automateWorkflow(file):
+def publish(name_file, main_window, onlyPublish):
     global SUCCESSFILES, EXITOSOS, FALLIDOS, WARNINGFILES, ROJO, RESET, AMARILLO, VERDE
 
-    name_file = os.path.basename(file).replace(".pbix", "")
+    tab_inicio = main_window.child_window(title="Inicio", control_type="TabItem", found_index=0)
+    if tab_inicio.exists(timeout=5):
+        tab_inicio.click_input()
+        time.sleep(1)
+
+    print("-> Iniciando proceso de publicación")
+
+    # Presionamos el boton 'Publicar'
+    btn_publish = main_window.child_window(title_re="^(Publicar|Publish)", control_type="Button", found_index=0)
+    btn_publish.click_input()
+
+    teamsNotification(name_file, 2, 1, '')
 
     try:
-        #=============================================#
-        #             APERTURA DE ARCHIVO             #
-        #=============================================#
-        os.startfile(file)
-        
-        # Apertura de archivo seleccionado
-        app = Application(backend="uia").connect(path="PBIDesktop.exe", timeout=60)
-        teamsNotification(name_file, 0, 0, '')
-        
-        # Guardamos la ventana de power bi en una variable (para poder manipularla)
-        main_window = app.window(title_re=f".*{name_file}.*")
-        
-        # Timeout para esperar a que la ventana de power bi termine de cargar
-        main_window.wait('ready', timeout=300)
-        main_window.set_focus()
-
-        time.sleep(30)
-
-
-
-        #=============================================#
-        #           ACTUALIZACION DE ARCHIVO          #
-        #=============================================#
-        
-        print("-> Iniciando proceso de actualización")
-
-        # Cantidad de intentos que lleva la actualizacion
-        updateTrys = 0
-        elementNotFoundTrys = 0
-        
-        # Cantidad de intentos permitidos que se le daran a la actualizacion
-        attempts = 2
-        elementAttempts = 2
-
-        while updateTrys < attempts and elementNotFoundTrys < elementAttempts:
-            update_result, elementNotFound = update(main_window, name_file)
-            
-            # Si la actualizacion termina exitosamente se termina el ciclo
-            if update_result is True:
-                break
-            else:
-                # Comprobamos si el error se debe a que no se encontro un elemento o por otra razon
-                if elementNotFound:
-                    print(f"-> {AMARILLO}Un elemento no se encontró en la interfaz gráfica, reintentando...{RESET}")
-                    elementNotFoundTrys += 1
-                else:
-                    print(f"-> {AMARILLO}Hubo un problema al iniciar la actualización, reintentando...{RESET}")
-                    updateTrys += 1
-
-                # Cerramos el proceso de PBI activo
-                if not force_kill_powerbi():
-                    raise ValueError("No se logró eliminar el proceso anterior de PBI Desktop|actualizacion")
-                
-                time.sleep(5)
-
-                # Si ya se alcanzo el maximo de intentos arrojamos una excepcion
-                if updateTrys == attempts:
-                    raise ValueError("Ocurrió un error en el proceso de actualización que requerira intervención|actualizacion")
-                elif elementNotFoundTrys == elementAttempts:
-                    raise ValueError("Elemento de la interfaz gráfica no se logró encontrar|actualizacion")
-
-                os.startfile(file)
-
-                app = Application(backend="uia").connect(path="PBIDesktop.exe", timeout=60)
-                teamsNotification(name_file, 0, 0, '')
-                
-                main_window = app.window(title_re=f".*{name_file}.*")
-                
-                main_window.wait('ready', timeout=300)
-                main_window.set_focus()
-                    
-            
-
-        #=============================================#
-        #           PUBLICACION DE ARCHIVO            #
-        #=============================================#
-        time.sleep(3)
-
-        print(f"-> {VERDE}Proceso de actualización finalizado de manera exitosa{RESET}")
-        print("-> Iniciando proceso de publicación")
-
-        # Presionamos el boton 'Publicar'
-        btn_publish = main_window.child_window(title_re="^(Publicar|Publish)", control_type="Button", found_index=0)
-        btn_publish.click_input()
-
-        teamsNotification(name_file, 2, 1, '')
-
         updateLink = "ms-pbi://pbi.microsoft.com/Views/KoForm.htm"
         modal_save = main_window.child_window(title_re=f".*{updateLink}.*", control_type="Pane", found_index=0)
         
@@ -668,11 +593,14 @@ def automateWorkflow(file):
                 pyautogui.press('enter')
         else:
             raise ValueError("No se encontró el panel de confirmación|publicacion")
+    except:
+        pass
 
-        # Guardamos en una variable el modal correspondiente al menu de seleccion al WORKSPACE donde se desea subir el reporte
-        url_workspace = "ms-pbi.pbi.microsoft.com/minerva/desktopDialogHost.html"
-        ventana_workspace = main_window.child_window(title_re=f".*{url_workspace}.*", control_type="Pane", found_index=0)
+    # Guardamos en una variable el modal correspondiente al menu de seleccion al WORKSPACE donde se desea subir el reporte
+    url_workspace = "ms-pbi.pbi.microsoft.com/minerva/desktopDialogHost.html"
+    ventana_workspace = main_window.child_window(title_re=f".*{url_workspace}.*", control_type="Pane", found_index=0)
 
+    if ventana_workspace.exists(timeout=60):
         # Buscamos y seleccionamos el campo editable dentro del modal de muestra las opciones de WORKSPACEs
         search_field = ventana_workspace.child_window(control_type="Edit", found_index=0)
         search_field.click_input()
@@ -738,6 +666,95 @@ def automateWorkflow(file):
                 EXITOSOS.append(name_file)
                 print(f"-> {VERDE}Proceso de publicación finalizado de manera exitosa{RESET}")
                 break
+
+def automateWorkflow(file, onlyPublish):
+    global SUCCESSFILES, EXITOSOS, FALLIDOS, WARNINGFILES, ROJO, RESET, AMARILLO, VERDE
+
+    name_file = os.path.basename(file).replace(".pbix", "")
+
+    try:
+        #=============================================#
+        #             APERTURA DE ARCHIVO             #
+        #=============================================#
+        os.startfile(file)
+        
+        # Apertura de archivo seleccionado
+        app = Application(backend="uia").connect(path="PBIDesktop.exe", timeout=60)
+        teamsNotification(name_file, 0, 0, '')
+        
+        # Guardamos la ventana de power bi en una variable (para poder manipularla)
+        main_window = app.window(title_re=f".*{name_file}.*")
+        
+        # Timeout para esperar a que la ventana de power bi termine de cargar
+        main_window.wait('ready', timeout=300)
+        main_window.set_focus()
+
+        time.sleep(30)
+
+
+
+        if not onlyPublish:
+            #=============================================#
+            #           ACTUALIZACION DE ARCHIVO          #
+            #=============================================#
+            
+            print("-> Iniciando proceso de actualización")
+
+            # Cantidad de intentos que lleva la actualizacion
+            updateTrys = 0
+            elementNotFoundTrys = 0
+            
+            # Cantidad de intentos permitidos que se le daran a la actualizacion
+            attempts = 2
+            elementAttempts = 2
+
+            while updateTrys < attempts and elementNotFoundTrys < elementAttempts:
+                update_result, elementNotFound = update(main_window, name_file)
+                
+                # Si la actualizacion termina exitosamente se termina el ciclo
+                if update_result is True:
+                    break
+                else:
+                    # Comprobamos si el error se debe a que no se encontro un elemento o por otra razon
+                    if elementNotFound:
+                        print(f"-> {AMARILLO}Un elemento no se encontró en la interfaz gráfica, reintentando...{RESET}")
+                        elementNotFoundTrys += 1
+                    else:
+                        print(f"-> {AMARILLO}Hubo un problema al iniciar la actualización, reintentando...{RESET}")
+                        updateTrys += 1
+
+                    # Cerramos el proceso de PBI activo
+                    if not force_kill_powerbi():
+                        raise ValueError("No se logró eliminar el proceso anterior de PBI Desktop|actualizacion")
+                    
+                    time.sleep(5)
+
+                    # Si ya se alcanzo el maximo de intentos arrojamos una excepcion
+                    if updateTrys == attempts:
+                        raise ValueError("Ocurrió un error en el proceso de actualización que requerira intervención|actualizacion")
+                    elif elementNotFoundTrys == elementAttempts:
+                        raise ValueError("Elemento de la interfaz gráfica no se logró encontrar|actualizacion")
+
+                    os.startfile(file)
+
+                    app = Application(backend="uia").connect(path="PBIDesktop.exe", timeout=60)
+                    teamsNotification(name_file, 0, 0, '')
+                    
+                    main_window = app.window(title_re=f".*{name_file}.*")
+                    
+                    main_window.wait('ready', timeout=300)
+                    main_window.set_focus()
+        
+            print(f"-> {VERDE}Proceso de actualización finalizado de manera exitosa{RESET}")
+            
+
+        #=============================================#
+        #           PUBLICACION DE ARCHIVO            #
+        #=============================================#
+        time.sleep(3)
+
+        # AGREGAR MISMA LOGICA QUE EN PROCESO DE ACTUALIZACION (PRESIONAR BOTON INICIO Y LUEGO PRESIONAR BOTON PUBLICAR)
+        publish(name_file, main_window, onlyPublish)
     
     except ValueError as e:
         FALLIDOS.append(name_file)
@@ -780,20 +797,32 @@ if __name__ == "__main__":
     # URL donde se envian las peticiones post con el mensaje a entregar por canal de Teams
     WEBHOOK = CONFIG["WEBHOOK_URL"]
 
-    skip = ["Reporte Ventas.pbix"]
+    noSkip = ["Reporte Ventas .pbix"]
 
+    onlyPublish = False
+    if len(sys.argv) > 1:
+        onlyPublish = True
+
+    filesOnlyPublish = CONFIG.get("ONLY_PUBLISH")
+    if filesOnlyPublish == None:
+        filesOnlyPublish = []
     # Se llama a la funcion principal de la automatizacion en este ciclo que itera sobre todos los archivos 
     # existentes dentro del directorio indicado
     for file in os.listdir(ROUTE):
-        if '.pbix' not in file or file != "Reporte Ventas .pbix":
-        #if '.pbix' not in file:
+        #if '.pbix' not in file or file in noSkip:
+        if '.pbix' not in file:
+            continue
+
+        if onlyPublish and file not in filesOnlyPublish:
+            continue
+        elif not onlyPublish and file in filesOnlyPublish:
             continue
 
         TOTALFILES += 1
         STATES["apertura"] = STATES["actualizacion"] = STATES["publicacion"] = "⚪"
 
         print(f"Trabajando en {file}")
-        automateWorkflow(os.path.join(ROUTE,file))
+        automateWorkflow(os.path.join(ROUTE,file), onlyPublish)
 
 
 

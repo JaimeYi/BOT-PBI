@@ -41,7 +41,7 @@ pip install selenium pywinauto pyautogui pyperclip requests psutil
 
 ---
 
-## 🛠️ Configuración (`config.json`)
+## Configuración (`config.json`)
 
 Antes de la primera ejecución, se debe completar el archivo `config.json`. **Nota:** Este archivo contiene credenciales sensibles y NO debe ser subido a repositorios públicos.
 
