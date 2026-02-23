@@ -1,6 +1,8 @@
 import subprocess
 import time
+import json
 import sys
+import os
 
 subprocess.run("cls", shell=True)
 
@@ -22,15 +24,22 @@ def printTitle():
 def printHelp():
     """Imprime el menú de ayuda del script"""
     print("Uso del Orquestador de Power BI")
-    print("Comando base: py main.py <opciones> <opciones>\n")
+    print("Comando base: py main.py [opciones] [archivo.pbix]\n")
+    
     print("Opciones permitidas:")
     print("  onlypublish    Omite la fase de actualización de datos y va directo a la publicación.")
     print("  nodownload     Omite la fase de descarga y descompresión de archivos en SharePoint.")
     print("  --help, -h     Muestra este menú de ayuda y sale del programa.\n")
+    
+    print("Parámetros dinámicos:")
+    print("  [nombre].pbix  Ejecuta el flujo EXCLUSIVAMENTE para el reporte indicado.")
+    print("                 (El archivo debe existir en la carpeta definida en DOWNLOAD_PATH).\n")
+    
     print("Ejemplos de uso válido:")
     print("  py main.py")
-    print("  py main.py onlypublish")
-    print("  py main.py nodownload onlypublish\n")
+    print("  py main.py nodownload")
+    print("  py main.py onlypublish Reporte_Ventas.pbix")
+    print("  py main.py nodownload onlypublish Finanzas.pbix\n")
 
 # Definición de colores
 VERDE = '\033[92m'
@@ -38,11 +47,19 @@ ROJO = '\033[91m'
 AMARILLO = '\033[33m'
 RESET = '\033[0m'
 
+try:
+    with open("config.json", "r", encoding="utf-8") as f:
+        config_data = json.load(f)
+        download_path = config_data.get("DOWNLOAD_PATH", "")
+except Exception:
+    download_path = ""
+
 onlyPublish = False
 noDownload = False
+targetFile = None
 
 # Capturamos todos los argumentos, saltando el nombre del script (índice 0) y pasando a minúsculas
-argumentos = [arg.lower() for arg in sys.argv[1:]]
+argumentos = sys.argv[1:]
 
 # 1. Búsqueda de petición de ayuda explícita
 if "--help" in argumentos or "-h" in argumentos:
@@ -51,22 +68,40 @@ if "--help" in argumentos or "-h" in argumentos:
     sys.exit(0)
 
 # 2. Validación de cantidad de parámetros (Máximo 2)
-if len(argumentos) > 2:
+if len(argumentos) > 3:
     print(f"- {ROJO}Error: Se ingresó una cantidad inválida de parámetros.{RESET}\n")
     printHelp()
     sys.exit(1)
 
 # 3. Asignación de banderas y detección de parámetros no permitidos
 for arg in argumentos:
-    if arg == "onlypublish":
+    arg_lower = arg.lower()
+    if arg_lower == "onlypublish":
         onlyPublish = True
-    elif arg == "nodownload":
+    elif arg_lower == "nodownload":
         noDownload = True
+    elif arg_lower.endswith(".pbix"):
+        targetFile = arg
     else:
         printTitle()
         print(f"- {ROJO}Error: El parámetro '{arg}' no se reconoce.{RESET}\n")
         printHelp()
         sys.exit(1)
+
+# Validación de existencia del archivo si se proporcionó uno
+if targetFile:
+    if not download_path:
+        print(f"- {ROJO}Error: DOWNLOAD_PATH no está definido en config.json.{RESET}")
+        sys.exit(1)
+        
+    full_path = os.path.join(download_path, targetFile)
+    if not os.path.isfile(full_path):
+        printTitle()
+        print(f"- {ROJO}Error: El archivo '{targetFile}' no existe en la ruta de descargas.{RESET}")
+        print(f"  Ruta revisada: {full_path}\n")
+        sys.exit(1)
+    
+    print(f"{AMARILLO}Modo Archivo Único Activado: Procesando exclusivamente '{targetFile}'{RESET}")
 
 printTitle()
 
@@ -94,9 +129,15 @@ else:
 if onlyPublish:
     print("* Solo publicación de reportes...EJECUTANDO\n")
     try:
-        subprocess.check_call(["py", "automatePBI.py", "onlyPublish"])
+        cmd_pbi = ["py", "automatePBI.py", "onlyPublish"]
+        if targetFile:
+            cmd_pbi.append(targetFile)
+            subprocess.run(["py", "configManager.py", "add-report", f"{targetFile}"])
+        subprocess.check_call(cmd_pbi)
     except subprocess.CalledProcessError:
         sys.exit(1)
+    if targetFile:
+        subprocess.run(["py", "configManager.py", "del-report", f"{targetFile}"])
     count = 5
     for _ in range(5):
         subprocess.run("cls", shell=True)
@@ -114,7 +155,10 @@ if onlyPublish:
 
 print("* Actualización y publicación de reportes...EJECUTANDO\n")
 try:
-    subprocess.check_call(["py", "automatePBI.py"])
+    cmd_pbi = ["py", "automatePBI.py"]
+    if targetFile:
+        cmd_pbi.append(targetFile)
+    subprocess.check_call(cmd_pbi)
 except subprocess.CalledProcessError:
     sys.exit(1)
 count = 5

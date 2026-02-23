@@ -86,7 +86,10 @@ Antes de la primera ejecución, se debe completar el archivo `config.json`. **No
                 "PASSWORD": ""
             }
         }
-    }
+    },
+    "ONLY_PUBLISH": [
+        "nombreReporte.pbix"
+    ]
 }
 ```
 

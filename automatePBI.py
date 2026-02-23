@@ -475,7 +475,7 @@ def update(main_window, name_file):
                                                 break
                             # Si existen archivos no validos arrojamos una excepcion, en caso contrario guardamos los cambios y retornamos False para repetir el proceso de actualizacion
                             if invalidFiles > 0:
-                                raise ValueError("no se han logrado encontrar los archivos especificados en los origenes de datos")
+                                raise ValueError("-> No se han logrado encontrar los archivos especificados en los origenes de datos")
                             else:
                                 btnSave = main_window.child_window(title="Guardar", control_type="Button", found_index=0)
                                 btnSave.click_input()
@@ -797,20 +797,23 @@ if __name__ == "__main__":
     # URL donde se envian las peticiones post con el mensaje a entregar por canal de Teams
     WEBHOOK = CONFIG["WEBHOOK_URL"]
 
-    noSkip = ["Reporte Ventas .pbix"]
+    targetFile = None
+    for arg in sys.argv[1:]:
+        if arg.lower().endswith(".pbix"):
+            targetFile = arg
+            break
 
-    onlyPublish = False
-    if len(sys.argv) > 1:
-        onlyPublish = True
+    onlyPublish = "onlypublish" in [arg.lower() for arg in sys.argv]
 
-    filesOnlyPublish = CONFIG.get("ONLY_PUBLISH")
-    if filesOnlyPublish == None:
-        filesOnlyPublish = []
+    filesOnlyPublish = CONFIG.get("ONLY_PUBLISH", [])
     # Se llama a la funcion principal de la automatizacion en este ciclo que itera sobre todos los archivos 
     # existentes dentro del directorio indicado
     for file in os.listdir(ROUTE):
         #if '.pbix' not in file or file in noSkip:
         if '.pbix' not in file:
+            continue
+
+        if targetFile and file != targetFile:
             continue
 
         if onlyPublish and file not in filesOnlyPublish:
