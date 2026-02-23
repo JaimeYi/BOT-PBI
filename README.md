@@ -70,7 +70,7 @@ python configManager.py set-cred SHAREPOINT usuario@empresa.com "ContraseñaSegu
 
 ```cmd
 python configManager.py add-db 192.168.0.1 admin_sql "ClaveSQL"
-python configManager.py add-web [https://intranet.empresa.com](https://intranet.empresa.com) admin "ClaveWeb"
+python configManager.py add-web "https://intranet.empresa.com" admin "ClaveWeb"
 
 ```
 
