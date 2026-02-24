@@ -39,7 +39,7 @@ pip install selenium pywinauto pyautogui pyperclip requests psutil
 
 ## 4. Configuración Inicial (configManager.py)
 
-Toda la parametrización del entorno (rutas, accesos, credenciales) se almacena en el archivo `config.json`. Por motivos de seguridad y estandarización, la manipulación de este archivo debe realizarse **exclusivamente** mediante el gestor `configManager.py`.
+Toda la parametrización del entorno (rutas, accesos, credenciales) se almacena en el archivo `config.json`. Si el archivo no existe, la ejecución de cualquier comando de `configManager.py` generará automáticamente una plantilla estructural. Por motivos de seguridad y estandarización, la manipulación de este archivo debe realizarse **exclusivamente** mediante el gestor.
 
 Para visualizar el listado completo de comandos disponibles:
 
@@ -55,6 +55,8 @@ python configManager.py --help
 ```cmd
 python configManager.py set DOWNLOAD_PATH "C:\Ruta\Hacia\Directorio\Descargas"
 python configManager.py set WORKSPACE "Nombre_Workspace_Destino"
+python configManager.py set SP_URL "[https://empresa.sharepoint.com/ruta_datos](https://empresa.sharepoint.com/ruta_datos)"
+python configManager.py set SP_URL_PARAMS "[https://empresa.sharepoint.com/ruta_parametros](https://empresa.sharepoint.com/ruta_parametros)"
 
 ```
 
@@ -70,11 +72,11 @@ python configManager.py set-cred SHAREPOINT usuario@empresa.com "ContraseñaSegu
 
 ```cmd
 python configManager.py add-db 192.168.0.1 admin_sql "ClaveSQL"
-python configManager.py add-web "https://intranet.empresa.com" admin "ClaveWeb"
+python configManager.py add-web "[https://intranet.empresa.com](https://intranet.empresa.com)" admin "ClaveWeb"
 
 ```
 
-**4. Administración de reportes (modo 'solo publicación'):**
+**4. Administración de reportes a publicar de forma exclusiva (modo 'solo publicación'):**
 
 ```cmd
 python configManager.py add-report "Reporte.pbix"
@@ -82,7 +84,16 @@ python configManager.py del-report "Reporte.pbix"
 
 ```
 
-**5. Auditoría de configuración actual:**
+**5. Exclusión de reportes específicos (Omisión durante el ciclo):**
+Los archivos añadidos mediante este comando serán ignorados por el orquestador general.
+
+```
+python configManager.py add-skip-report "Reporte_Obsoleto.pbix"
+python configManager.py del-skip-report "Reporte_Obsoleto.pbix"
+
+```
+
+**6. Auditoría de configuración actual:**
 
 ```cmd
 python configManager.py list
@@ -95,7 +106,7 @@ python configManager.py list
 
 ## 5. Ejecución y Modo de Uso (main.py)
 
-La herramienta `main.py` acepta múltiples parámetros de ejecución. Previo a iniciar cualquier flujo, debe garantizar que **no existan instancias previas de Power BI Desktop en ejecución** y que el equipo no reciba interacción de hardware (mouse/teclado) durante el proceso automatizado.
+La herramienta `main.py` evalúa de forma preliminar que existan las configuraciones mínimas obligatorias para operar. Previo a iniciar cualquier flujo, se debe garantizar que **no existan instancias previas de Power BI Desktop en ejecución** y que el equipo no reciba interacción de hardware (mouse/teclado) durante el proceso automatizado.
 
 Para consultar el manual de operación en consola:
 
@@ -107,7 +118,7 @@ python main.py --help
 ### Escenarios de Ejecución Permitidos:
 
 **Ejecución de flujo completo (Estándar):**
-Ejecuta secuencialmente descarga, descompresión, actualización de datos y publicación para todos los reportes habilitados.
+Ejecuta secuencialmente descarga, descompresión, actualización de datos y publicación para todos los reportes, omitiendo aquellos detallados en la lista de exclusión (`SKIP`).
 
 ```cmd
 python main.py
@@ -139,7 +150,7 @@ python main.py Nombre_Del_Reporte.pbix
 ```
 
 **Ejecución combinada (Ejemplo avanzado):**
-Publica un archivo específico omitiendo la fase de descarga en SharePoint y la actualización de orígenes de datos.
+Publica un archivo específico omitiendo la fase de descarga en SharePoint y la actualización de orígenes de datos. (Al pasar un archivo como parámetro dinámico, el sistema gestionará su adición temporal a la lista de publicación autorizada).
 
 ```cmd
 python main.py nodownload onlypublish Nombre_Del_Reporte.pbix
