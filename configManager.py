@@ -30,7 +30,8 @@ class ConfigManager:
                     "DATABASES": {},
                     "WEBSITES": {}
                 },
-                "ONLY_PUBLISH": []
+                "ONLY_PUBLISH": [],
+                "SKIP": []
             }
             
             # Forzamos la escritura en el disco duro
@@ -124,6 +125,37 @@ class ConfigManager:
             self._save_config()
             return True
         return False
+    
+    # ==========================================
+    # 5. REPORTES A SALTAR (SKIP)
+    # ==========================================
+    def add_report_to_skip(self, report_name):
+        # 1. Obtenemos la ruta configurada
+        download_path = self.config.get("DOWNLOAD_PATH", "")
+        
+        # 2. Validamos que la ruta base exista en la configuración
+        if not download_path:
+            raise ValueError("La variable 'DOWNLOAD_PATH' no está definida. Configúrala primero usando el comando 'set'.")
+            
+        # 3. Construimos la ruta absoluta y validamos si el archivo existe físicamente
+        full_path = os.path.join(download_path, report_name)
+        if not os.path.isfile(full_path):
+            raise FileNotFoundError(f"El archivo '{report_name}' no se encontró en el directorio:\n    {download_path}")
+
+        # 4. Si pasa las validaciones, lo añadimos (evitando duplicados)
+        if report_name not in self.config["SKIP"]:
+            self.config["SKIP"].append(report_name)
+            self._save_config()
+            return True
+            
+        return False
+
+    def remove_report_from_skip(self, report_name):
+        if report_name in self.config["SKIP"]:
+            self.config["SKIP"].remove(report_name)
+            self._save_config()
+            return True
+        return False
 
 # ==========================================
 # INTERFAZ DE LÍNEA DE COMANDOS (CLI)
@@ -175,6 +207,12 @@ def main():
     parser_del_rep = subparsers.add_parser("del-report", help="Elimina un reporte de ONLY_PUBLISH")
     parser_del_rep.add_argument("reporte", help="Nombre del archivo a eliminar")
 
+    parser_add_skip_rep = subparsers.add_parser("add-skip-report", help="Añade un reporte a SKIP")
+    parser_add_skip_rep.add_argument("reporte", help="Nombre del archivo (ej. Stock.pbix)")
+
+    parser_del_skip_rep = subparsers.add_parser("del-skip-report", help="Elimina un reporte de SKIP")
+    parser_del_skip_rep.add_argument("reporte", help="Nombre del archivo a eliminar")
+
     # Validar si no se pasaron argumentos
     if len(sys.argv) == 1:
         parser.print_help()
@@ -209,6 +247,10 @@ def main():
 
         print(f"{VERDE}\n[REPORTES 'ONLY_PUBLISH'] ({len(config.config['ONLY_PUBLISH'])}){RESET}")
         for rep in config.config["ONLY_PUBLISH"]:
+            print(f"  - {rep}")
+
+        print(f"{VERDE}\n[REPORTES 'SKIP'] ({len(config.config['SKIP'])}){RESET}")
+        for rep in config.config["SKIP"]:
             print(f"  - {rep}")
         print("\n" + "=" * 36 + "\n")
 
@@ -253,6 +295,25 @@ def main():
 
     elif args.comando == "del-report":
         if config.remove_report_from_publish(args.reporte): print(f"{VERDE}[SUCCESS]{RESET} Reporte eliminado de la lista.")
+        else: print(f"{ROJO}[ERROR]{RESET} El reporte no estaba en la lista.")
+
+    elif args.comando == "add-skip-report":
+        try:
+            if config.add_report_to_skip(args.reporte): 
+                print(f"{VERDE}[SUCCESS]{RESET} Reporte '{args.reporte}' añadido exitosamente.")
+            else: 
+                print(f"{AMARILLO}[INFO]{RESET} El reporte '{args.reporte}' ya se encontraba en la lista.")
+                
+        except ValueError as e:
+            print(f"{ROJO}[ERROR]{RESET} Configuración incompleta: {e}")
+            
+        except FileNotFoundError as e:
+            print(f"{ROJO}[ERROR]{RESET} Archivo no encontrado.")
+            print(f"Detalle: {e}")
+            print("Verifique que el nombre sea correcto (incluyendo la extensión '.pbix').")
+
+    elif args.comando == "del-skip-report":
+        if config.remove_report_from_skip(args.reporte): print(f"{VERDE}[SUCCESS]{RESET} Reporte eliminado de la lista.")
         else: print(f"{ROJO}[ERROR]{RESET} El reporte no estaba en la lista.")
 
 if __name__ == "__main__":

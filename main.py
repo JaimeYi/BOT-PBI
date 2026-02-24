@@ -118,6 +118,7 @@ if targetFile:
     print(f"{AMARILLO}*** Modo Archivo Único Activado: Procesando exclusivamente '{targetFile}' ***{RESET}")
 
 printTitle()
+skipFiles = config_data.get("SKIP", [])
 
 if not noDownload:
     print("* Descarga y descompresión...EJECUTANDO\n")
@@ -136,22 +137,32 @@ if not noDownload:
 
     subprocess.run("cls", shell=True)
     printTitle()
+    if skipFiles:
+        print(f"{AMARILLO}** Hay archivos que serán omitidos **{RESET}")
     print(f"* {VERDE}Descarga y descompresión...LISTO{RESET}")
 else:
+    if skipFiles:
+        print(f"{AMARILLO}** Hay archivos que serán omitidos **{RESET}")
     print(f"* {VERDE}Descarga y descompresión...OMITIDO{RESET}")
 
 if onlyPublish:
     print("* Solo publicación de reportes...EJECUTANDO\n")
+
+    onlyPublishFiles = config_data.get("ONLY_PUBLISH")
+    modifiedPublishFile = False
+    if not (targetFile in onlyPublishFiles):
+        modifiedPublishFile = True
+        subprocess.run(["py", "configManager.py", "add-report", f"{targetFile}"], capture_output=True)
+
     try:
         cmd_pbi = ["py", "automatePBI.py", "onlyPublish"]
         if targetFile:
             cmd_pbi.append(targetFile)
-            subprocess.run(["py", "configManager.py", "add-report", f"{targetFile}"])
         subprocess.check_call(cmd_pbi)
     except subprocess.CalledProcessError:
         sys.exit(1)
-    if targetFile:
-        subprocess.run(["py", "configManager.py", "del-report", f"{targetFile}"])
+    if modifiedPublishFile:
+        subprocess.run(["py", "configManager.py", "del-report", f"{targetFile}"], capture_output=True)
     count = 5
     for _ in range(5):
         subprocess.run("cls", shell=True)

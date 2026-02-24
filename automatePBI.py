@@ -72,7 +72,7 @@ def loadConfig():
             config = json.load(f)
         return config
     except FileNotFoundError:
-        print(f"{ROJO}Error: No se encontró el archivo config.json{RESET}")
+        print(f"-> {ROJO}Error: No se encontró el archivo config.json{RESET}")
         return {}
 
 # Funcion que escribe los errores de la ejecucion en un archivo .txt
@@ -92,7 +92,7 @@ def log(archivo_pbi, fase, detalle):
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(log_line)
     except Exception as e:
-        print(f"{ROJO}No se pudo escribir en el log de errores: {e} {RESET}")
+        print(f"-> {ROJO}No se pudo escribir en el log de errores: {e} {RESET}")
 
 def defineEmoji(result):
     if result == 0: # No error
@@ -195,9 +195,9 @@ def teamsNotification(archivo, faseDeEjecucion, resultado, error):
             headers={'Content-Type': 'application/json'}
         )
         if response.status_code != 202:
-            print(f"{AMARILLO}Error en Workflow: {response.status_code} - {response.text}{AMARILLO}")
+            print(f"-> {AMARILLO}Error en Workflow: {response.status_code} - {response.text}{AMARILLO}")
     except Exception as e:
-        print(f"{AMARILLO}Error de conexión: {e}{AMARILLO}")
+        print(f"-> {AMARILLO}Error de conexión: {e}{AMARILLO}")
 
 def cleanPath(ruta):
     # Buscamos de derecha a izquierda (rfind) la última posición de ambos separadores
@@ -537,7 +537,7 @@ def update(main_window, name_file):
                 except pywinauto.findwindows.ElementNotFoundError:
                     return False, True
                 except Exception as e:
-                    print(e)
+                    print(f"-> {e}")
                     # 1. Si el error es uno de los nuestros (ya trae el marcador), lo lanzamos fuera de inmediato
                     # Esto evitará que caiga en el try/except anidado de abajo.
                     if "|actualizacion" in str(e):
@@ -578,7 +578,7 @@ def publish(name_file, main_window, onlyPublish):
         updateLink = "ms-pbi://pbi.microsoft.com/Views/KoForm.htm"
         modal_save = main_window.child_window(title_re=f".*{updateLink}.*", control_type="Pane", found_index=0)
         
-        if modal_save.exists(timeout=60):
+        if modal_save.exists(timeout=20):
             # Buscamos el boton 'Guardar' dentro del modal que aparece antes de publicar
             btn_save = modal_save.child_window(title_re="^(Guardar|Save).*", control_type="Button",found_index=0)
             
@@ -784,6 +784,7 @@ def automateWorkflow(file, onlyPublish):
         print(f"-> {ROJO}Error crítico registrado, revisar logs de ejecución para más información{RESET}")
     
     force_kill_powerbi()
+    print()
 
 if __name__ == "__main__":
     CONFIG = loadConfig()
@@ -800,17 +801,24 @@ if __name__ == "__main__":
     targetFile = None
     for arg in sys.argv[1:]:
         if arg.lower().endswith(".pbix"):
-            targetFile = arg
+            targetFile = arg.lower()
             break
 
     onlyPublish = "onlypublish" in [arg.lower() for arg in sys.argv]
 
     filesOnlyPublish = CONFIG.get("ONLY_PUBLISH", [])
+    filesOnlyPublish = [elem.lower() for elem in filesOnlyPublish]
+
+    skipFiles = CONFIG.get("SKIP", [])
+    skipFiles = [elem.lower() for elem in skipFiles]
     # Se llama a la funcion principal de la automatizacion en este ciclo que itera sobre todos los archivos 
     # existentes dentro del directorio indicado
     for file in os.listdir(ROUTE):
-        #if '.pbix' not in file or file in noSkip:
+        file = file.lower()
         if '.pbix' not in file:
+            continue
+
+        if file in skipFiles:
             continue
 
         if targetFile and file != targetFile:
@@ -824,7 +832,7 @@ if __name__ == "__main__":
         TOTALFILES += 1
         STATES["apertura"] = STATES["actualizacion"] = STATES["publicacion"] = "⚪"
 
-        print(f"Trabajando en {file}")
+        print(f"Trabajando en {file.upper()}")
         automateWorkflow(os.path.join(ROUTE,file), onlyPublish)
 
 
