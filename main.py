@@ -50,13 +50,24 @@ RESET = '\033[0m'
 try:
     with open("config.json", "r", encoding="utf-8") as f:
         config_data = json.load(f)
-        download_path = config_data.get("DOWNLOAD_PATH", "")
+        download_path = config_data.get("DOWNLOAD_PATH")
 except Exception:
     download_path = ""
 
 onlyPublish = False
 noDownload = False
 targetFile = None
+
+# Validacion de configuracion minima para comenzar la ejecucion
+def valideConfig():
+    minimumConfigs = ["DOWNLOAD_PATH", "WORKSPACE", "ADDRESSE_MAIL", "SP_URL", "SP_URL_PARAMS", "CREDENTIALS"]
+    for config in minimumConfigs:
+        if config_data.get(config) is None or config_data.get(config) == "":
+            print(f"{ROJO} No se tiene la configuración mínima para comenzar el flujo de trabajo{RESET}")
+            print(f"{ROJO} Configuración faltante: {config}{RESET}")
+            return False
+    
+    return True
 
 # Capturamos todos los argumentos, saltando el nombre del script (índice 0) y pasando a minúsculas
 argumentos = sys.argv[1:]
@@ -88,6 +99,9 @@ for arg in argumentos:
         printHelp()
         sys.exit(1)
 
+if not valideConfig():
+    sys.exit(1)
+
 # Validación de existencia del archivo si se proporcionó uno
 if targetFile:
     if not download_path:
@@ -101,7 +115,7 @@ if targetFile:
         print(f"  Ruta revisada: {full_path}\n")
         sys.exit(1)
     
-    print(f"{AMARILLO}Modo Archivo Único Activado: Procesando exclusivamente '{targetFile}'{RESET}")
+    print(f"{AMARILLO}*** Modo Archivo Único Activado: Procesando exclusivamente '{targetFile}' ***{RESET}")
 
 printTitle()
 
