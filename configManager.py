@@ -157,6 +157,23 @@ class ConfigManager:
             return True
         return False
 
+    # ==========================================
+    # 6. LIMPIAR SKIP Y ONLY_PUBLISH
+    # ==========================================
+    def clear_skip(self):
+        skipFiles = self.config["SKIP"].copy()
+        for file in skipFiles:
+            self.config["SKIP"].remove(file)
+            self._save_config()
+        return True
+    
+    def clear_publish(self):
+        publishFiles = self.config["ONLY_PUBLISH"].copy()
+        for file in publishFiles:
+            self.config["ONLY_PUBLISH"].remove(file)
+            self._save_config()
+        return True
+
 # ==========================================
 # INTERFAZ DE LÍNEA DE COMANDOS (CLI)
 # ==========================================
@@ -212,6 +229,9 @@ def main():
 
     parser_del_skip_rep = subparsers.add_parser("del-skip-report", help="Elimina un reporte de SKIP")
     parser_del_skip_rep.add_argument("reporte", help="Nombre del archivo a eliminar")
+
+    parser_clear_skip = subparsers.add_parser("clear-skip", help="Limpia SKIP")
+    parser_clear_publish = subparsers.add_parser("clear-publish", help="Limpia ONLY_PUBLISH")
 
     # Validar si no se pasaron argumentos
     if len(sys.argv) == 1:
@@ -315,6 +335,14 @@ def main():
     elif args.comando == "del-skip-report":
         if config.remove_report_from_skip(args.reporte): print(f"{VERDE}[SUCCESS]{RESET} Reporte eliminado de la lista.")
         else: print(f"{ROJO}[ERROR]{RESET} El reporte no estaba en la lista.")
+    
+    elif args.comando == "clear-skip":
+        config.clear_skip()
+        print(f"{VERDE}[SUCCESS]{RESET} Limpieza de SKIP realizada correctamente")
+    
+    elif args.comando == "clear-publish":
+        config.clear_publish()
+        print(f"{VERDE}[SUCCESS]{RESET} Limpieza de ONLY_PUBLISH realizada correctamente")
 
 if __name__ == "__main__":
     main()

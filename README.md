@@ -93,7 +93,15 @@ python configManager.py del-skip-report "Reporte_Obsoleto.pbix"
 
 ```
 
-**6. Auditoría de configuración actual:**
+**6. Limpieza de archivos a omitir y archivos de publicación exclusiva**
+Con estos comandos se podrán limpiar la totalidad de reportes incluidos para ser omitidos o para ser exclusivamente publicados.
+```
+python configManager.py clear-skip
+python configManager.py clear-publish
+
+```
+
+**7. Auditoría de configuración actual:**
 
 ```cmd
 python configManager.py list
