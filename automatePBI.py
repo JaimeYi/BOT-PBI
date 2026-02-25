@@ -425,13 +425,36 @@ def update(main_window, name_file):
 
                                     # Entramos a la seccion 'Cambiar origen'
                                     changeSource = configSourceDataWindow.child_window(title="Cambiar origen...", control_type="Button", found_index=0)
-                                    changeSource.click_input()
+                                    if changeSource.exists(timeout=20):
+                                        changeSource.click_input()
+                                        print("-> Botón 'Cambiar origen...' presionado")
 
-                                    time.sleep(3)
-                                    
+                                    try:
+                                        if configSourceDataWindow.child_window(title="Libro de Excel", control_type="Pane", found_index=0):
+                                            filePathpt1 = configSourceDataWindow.child_window(title="Parte de la ruta del archivo", control_type="Edit", found_index = 0)
+                                            filePathpt1 = filePathpt1.get_value()
+
+                                            filePathpt2 = configSourceDataWindow.child_window(title="Parte de la ruta del archivo", control_type="Edit", found_index = 1)
+                                            filePathpt2 = filePathpt2.get_value()
+
+                                            filePath = filePathpt1 + filePathpt2
+
+                                            configSourceDataWindow.child_window(title="Básico", control_type="RadioButton", found_index = 0).click_input()
+                                            changePathOfFileField = configSourceDataWindow.child_window(title_re=".*(Ruta de acceso de archivo).*", control_type="Edit", found_index=0)
+                                            if changePathOfFileField.exists(timeout=20):
+                                                changePathOfFileField.click_input()
+                                            
+                                            pyautogui.hotkey('ctrl', 'a')
+                                            pyperclip.copy(str(filePath))
+                                            pyautogui.hotkey('ctrl','v')
+                                    except Exception as e:
+                                        pass
+
                                     # Obtenemos la ruta actual del archivo
                                     changePathOfFileField = configSourceDataWindow.child_window(title_re=".*(Ruta de acceso de archivo).*", control_type="Edit", found_index=0)
-                                    changePathOfFileField.click_input()
+                                    if changePathOfFileField.exists(timeout=20):
+                                        changePathOfFileField.click_input()
+                                        print("-> Ruta del archivo seleccionada")
 
                                     # Verificamos si el archivo al que apunta la ruta que estamos revisando esta dentro de la lista de archivos permitidos
                                     newPath = "N/A"
@@ -444,8 +467,10 @@ def update(main_window, name_file):
                                         pyautogui.hotkey('ctrl', 'a')
                                         pyperclip.copy(str(newPath))
                                         pyautogui.hotkey('ctrl','v')
+                                        print(f"-> Ruta cambiada, nueva ruta '{newPath}'")
                                         modifiedPaths += 1
                                     else:
+                                        print("-> No se encontró el archivo en el equipo local")
                                         invalidFiles += 1
 
                                     # Presionamos el boton 'Aceptar'
@@ -475,7 +500,7 @@ def update(main_window, name_file):
                                                 break
                             # Si existen archivos no validos arrojamos una excepcion, en caso contrario guardamos los cambios y retornamos False para repetir el proceso de actualizacion
                             if invalidFiles > 0:
-                                raise ValueError("-> No se han logrado encontrar los archivos especificados en los origenes de datos")
+                                raise ValueError("No se han logrado encontrar los archivos especificados en los origenes de datos")
                             else:
                                 btnSave = main_window.child_window(title="Guardar", control_type="Button", found_index=0)
                                 btnSave.click_input()
@@ -705,8 +730,8 @@ def automateWorkflow(file, onlyPublish):
             elementNotFoundTrys = 0
             
             # Cantidad de intentos permitidos que se le daran a la actualizacion
-            attempts = 2
-            elementAttempts = 2
+            attempts = 3
+            elementAttempts = 3
 
             while updateTrys < attempts and elementNotFoundTrys < elementAttempts:
                 update_result, elementNotFound = update(main_window, name_file)
