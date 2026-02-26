@@ -417,7 +417,10 @@ def update(main_window, name_file):
                                     searchBar = configSourceDataWindow.child_window(title='Buscar configuración de origen de datos', control_type="Edit", found_index=0)
                                     pyperclip.copy(cleanPath(file))
                                     searchBar.click_input()
-                                    pyautogui.hotkey('ctrl', 'a')
+                                    try:
+                                        configSourceDataWindow.child_window(title="Cancelar búsqueda", control_type="Button", found_index=0).click_input()
+                                    except:
+                                        pass
                                     pyautogui.hotkey('ctrl', 'v')
 
                                     selectedSource = listSources.child_window(title=file, control_type="ListItem", found_index=0)
@@ -530,9 +533,13 @@ def update(main_window, name_file):
                             changes = False
                             for source in dataSourcesList:
                                 searchBar = configSourceDataWindow.child_window(title='Buscar configuración de origen de datos', control_type="Edit", found_index=0)
+                                pyperclip.copy(source)
                                 searchBar.click_input()
-                                pyautogui.hotkey('ctrl', 'a')
-                                searchBar.type_keys(source)
+                                try:
+                                    configSourceDataWindow.child_window(title="Cancelar búsqueda", control_type="Button", found_index=0).click_input()
+                                except:
+                                    pass
+                                pyautogui.hotkey('ctrl', 'v')
 
                                 for database in CONFIG["CREDENTIALS"]["DATABASES"]:
                                     if database in source:
